@@ -1,3 +1,4 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 from typing import List
 import json
@@ -10,6 +11,13 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://postgres:password@localhost:5432/cake_db"
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def enforce_async_db_driver(cls, v: str) -> str:
+        if isinstance(v, str) and v.startswith("postgresql://"):
+            return v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return v
 
     # JWT
     SECRET_KEY: str = "change-this-secret-key"
