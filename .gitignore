@@ -1,0 +1,29 @@
+# Python Virtual Environment
+venv/
+.venv/
+env/
+ENV/
+
+# Python compiled bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables containing sensitive secrets
+.env
+
+# Testing / Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local databases
+*.db
+*.sqlite3
+
+# Editor / IDE configuration
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
