@@ -45,6 +45,7 @@ class ManualOrderCreate(BaseModel):
     address: Optional[str] = None
     cake_name: str
     quantity: int = 1
+    weight: Optional[str] = None
     amount: float
     order_source: str
     payment_status: str = "pending"
@@ -59,6 +60,7 @@ class ManualOrderUpdate(BaseModel):
     address: Optional[str] = None
     cake_name: Optional[str] = None
     quantity: Optional[int] = None
+    weight: Optional[str] = None
     amount: Optional[float] = None
     order_source: Optional[str] = None
     payment_status: Optional[str] = None

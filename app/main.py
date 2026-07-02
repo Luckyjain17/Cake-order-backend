@@ -15,6 +15,7 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(Base.metadata.create_all)
         try:
             await conn.execute(text("ALTER TABLE products ADD COLUMN IF NOT EXISTS price_base_weight VARCHAR(50) NOT NULL DEFAULT '500g';"))
+            await conn.execute(text("ALTER TABLE manual_orders ADD COLUMN IF NOT EXISTS weight VARCHAR(50);"))
         except Exception as e:
             print("Auto migration column check:", e)
     # Seed default admin + categories

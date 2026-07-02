@@ -102,6 +102,8 @@ async def list_manual_orders(
     per_page: int = Query(20, ge=1, le=100),
     status: Optional[str] = None,
     order_source: Optional[str] = None,
+    payment_status: Optional[str] = None,
+    weight: Optional[str] = None,
     search: Optional[str] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
@@ -113,6 +115,10 @@ async def list_manual_orders(
         q = q.where(ManualOrder.status == status)
     if order_source:
         q = q.where(ManualOrder.order_source == order_source)
+    if payment_status:
+        q = q.where(ManualOrder.payment_status == payment_status)
+    if weight:
+        q = q.where(ManualOrder.weight == weight)
     if start_date:
         q = q.where(func.to_char(ManualOrder.created_at, 'YYYY-MM-DD') >= start_date)
     if end_date:

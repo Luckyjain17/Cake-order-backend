@@ -57,6 +57,7 @@ class ManualOrder(Base):
     # Cake details
     cake_name = Column(String(200), nullable=False)
     quantity = Column(Integer, default=1)
+    weight = Column(String(50), nullable=True)
     amount = Column(Float, nullable=False, default=0)
 
     # Meta
