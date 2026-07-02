@@ -4,6 +4,7 @@ from app.models.product import Product
 from app.models.product_image import ProductImage
 from app.models.order import Order, ManualOrder
 from app.models.business_data import BusinessData
+from app.models.setting import Setting
 
 __all__ = [
     "AdminUser",
@@ -13,4 +14,5 @@ __all__ = [
     "Order",
     "ManualOrder",
     "BusinessData",
+    "Setting",
 ]

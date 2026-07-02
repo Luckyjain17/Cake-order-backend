@@ -39,7 +39,11 @@ class Settings(BaseSettings):
     BACKEND_CORS_ORIGINS: str = '["http://localhost:5173","http://localhost:3000"]'
 
     # WhatsApp
-    WHATSAPP_NUMBER: str = "919876543210"
+    WHATSAPP_NUMBER: str = "918269412418"
+
+    # UPI Fallbacks
+    UPI_ID: str = "8269412418@ybl"
+    PAYEE_NAME: str = "Manu's Cake Shop"
 
     @property
     def cors_origins(self) -> List[str]:
