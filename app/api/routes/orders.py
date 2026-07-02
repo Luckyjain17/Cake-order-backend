@@ -136,6 +136,19 @@ async def list_manual_orders(
     )
 
 
+@router.get("/manual/{order_id}", response_model=ManualOrderOut)
+async def get_manual_order(
+    order_id: int,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_admin),
+):
+    result = await db.execute(select(ManualOrder).where(ManualOrder.id == order_id))
+    order = result.scalar_one_or_none()
+    if not order:
+        raise HTTPException(status_code=404, detail="Manual order not found")
+    return ManualOrderOut.model_validate(order)
+
+
 @router.put("/manual/{order_id}", response_model=ManualOrderOut)
 async def update_manual_order(
     order_id: int,
