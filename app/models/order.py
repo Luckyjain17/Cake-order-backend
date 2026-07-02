@@ -59,6 +59,7 @@ class ManualOrder(Base):
     quantity = Column(Integer, default=1)
     weight = Column(String(50), nullable=True)
     amount = Column(Float, nullable=False, default=0)
+    paid_amount = Column(Float, nullable=True, default=0)
 
     # Meta
     order_source = Column(String(30), nullable=False)   # whatsapp | phone | walkin | instagram | facebook | other

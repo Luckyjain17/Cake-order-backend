@@ -47,6 +47,7 @@ class ManualOrderCreate(BaseModel):
     quantity: int = 1
     weight: Optional[str] = None
     amount: float
+    paid_amount: Optional[float] = 0
     order_source: str
     payment_status: str = "pending"
     status: str = "new"
@@ -62,6 +63,7 @@ class ManualOrderUpdate(BaseModel):
     quantity: Optional[int] = None
     weight: Optional[str] = None
     amount: Optional[float] = None
+    paid_amount: Optional[float] = None
     order_source: Optional[str] = None
     payment_status: Optional[str] = None
     status: Optional[str] = None
