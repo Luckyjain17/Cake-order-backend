@@ -1,4 +1,7 @@
 import os
+# Pop CLOUDINARY_UPLOAD_PRESET to avoid SDK auto-injecting non-existent presets during signed uploads
+os.environ.pop("CLOUDINARY_UPLOAD_PRESET", None)
+
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
@@ -14,10 +17,6 @@ def clean_env_var(val: str) -> str:
     if (val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'")):
         return val[1:-1]
     return val
-
-
-# Pop CLOUDINARY_UPLOAD_PRESET to avoid SDK auto-injecting non-existent presets during signed uploads
-os.environ.pop("CLOUDINARY_UPLOAD_PRESET", None)
 
 # Configure Cloudinary
 cloudinary.config(
