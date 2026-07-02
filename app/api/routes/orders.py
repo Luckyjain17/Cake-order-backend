@@ -99,7 +99,7 @@ async def create_manual_order(
 @router.get("/manual/all", response_model=PaginatedManualOrders)
 async def list_manual_orders(
     page: int = Query(1, ge=1),
-    per_page: int = Query(20, ge=1, le=100),
+    per_page: int = Query(20, ge=1, le=1000),
     status: Optional[str] = None,
     order_source: Optional[str] = None,
     payment_status: Optional[str] = None,
@@ -120,9 +120,9 @@ async def list_manual_orders(
     if weight:
         q = q.where(ManualOrder.weight == weight)
     if start_date:
-        q = q.where(func.to_char(ManualOrder.created_at, 'YYYY-MM-DD') >= start_date)
+        q = q.where(func.coalesce(ManualOrder.delivery_date, func.to_char(ManualOrder.created_at, 'YYYY-MM-DD')) >= start_date)
     if end_date:
-        q = q.where(func.to_char(ManualOrder.created_at, 'YYYY-MM-DD') <= end_date)
+        q = q.where(func.coalesce(ManualOrder.delivery_date, func.to_char(ManualOrder.created_at, 'YYYY-MM-DD')) <= end_date)
     if search:
         q = q.where(or_(
             ManualOrder.customer_name.ilike(f"%{search}%"),
