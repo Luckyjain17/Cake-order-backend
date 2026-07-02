@@ -114,6 +114,7 @@ class ProductListOut(BaseModel):
     rating: float
     cover_image: Optional[ProductImageOut] = None
     category_id: Optional[int] = None
+    price_base_weight: Optional[str] = "500g"
 
     class Config:
         from_attributes = True
