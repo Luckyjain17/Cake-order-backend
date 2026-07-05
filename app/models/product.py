@@ -23,7 +23,7 @@ class Product(Base):
 
     # Cake attributes
     cake_type = Column(String(50), nullable=True)     # Fondant, Cream Cake, etc.
-    flavor = Column(String(100), nullable=True)
+    flavor = Column(String(500), nullable=True)
     shape = Column(String(50), nullable=True)         # Round, Square, Heart, etc.
 
     # Weight options stored as JSON string (e.g. ["500g","1kg","2kg"])

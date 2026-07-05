@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
 from sqlalchemy.orm import selectinload
-from typing import Optional
+from typing import Optional, List
 import re, time
 
 from app.core.database import get_db
@@ -56,8 +56,12 @@ async def get_filters_list(db: AsyncSession = Depends(get_db)):
     flavors_res = await db.execute(flavors_query)
     cake_types_res = await db.execute(cake_types_query)
 
-    # Convert distinct tuples to a clean sorted list of strings
-    flavors = sorted(list(set([r[0].strip() for r in flavors_res.all() if r[0] and r[0].strip()])))
+    # Convert distinct tuples to a clean sorted list of strings, splitting comma-separated multiple flavors
+    raw_flavors = []
+    for r in flavors_res.all():
+        if r[0]:
+            raw_flavors.extend([part.strip() for part in r[0].split(",") if part.strip()])
+    flavors = sorted(list(set(raw_flavors)))
     cake_types = sorted(list(set([r[0].strip() for r in cake_types_res.all() if r[0] and r[0].strip()])))
 
     return {
@@ -320,12 +324,16 @@ async def delete_flavor(
     db: AsyncSession = Depends(get_db),
     _=Depends(get_current_admin),
 ):
-    from sqlalchemy import update
-    await db.execute(
-        update(Product)
-        .where(Product.flavor == flavor_name)
-        .values(flavor=None)
+    result = await db.execute(
+        select(Product).where(Product.flavor.ilike(f"%{flavor_name}%"))
     )
+    products = result.scalars().all()
+    for p in products:
+        if p.flavor:
+            parts = [part.strip() for part in p.flavor.split(",") if part.strip()]
+            new_parts = [part for part in parts if part.lower() != flavor_name.lower()]
+            p.flavor = ",".join(new_parts) if new_parts else None
+    await db.flush()
     return {"message": "Flavor deleted"}
 
 
@@ -342,4 +350,34 @@ async def delete_cake_type(
         .values(cake_type=None)
     )
     return {"message": "Cake type deleted"}
+
+
+@router.post("/bulk", response_model=List[ProductOut])
+async def create_products_bulk(
+    data: List[ProductCreate],
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_admin),
+):
+    created_products = []
+    for item in data:
+        slug = _slugify(item.name)
+        existing = await db.execute(select(Product).where(Product.slug == slug))
+        if existing.scalar_one_or_none():
+            slug = f"{slug}-{int(time.time())}-{int(1000 * time.time()) % 1000}"
+        product = Product(**item.model_dump(exclude={"is_eggless"}), slug=slug, is_eggless=True)
+        db.add(product)
+        created_products.append(product)
+    
+    await db.flush()
+    
+    result_list = []
+    for p in created_products:
+        res = await db.execute(
+            select(Product)
+            .where(Product.id == p.id)
+            .options(selectinload(Product.images))
+        )
+        loaded = res.scalar_one()
+        result_list.append(_attach_cover(loaded))
+    return result_list
 

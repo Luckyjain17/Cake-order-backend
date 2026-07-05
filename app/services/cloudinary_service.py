@@ -18,6 +18,8 @@ def clean_env_var(val: str) -> str:
         return val[1:-1]
     return val
 
+import uuid
+
 # Configure Cloudinary
 cloudinary.config(
     cloud_name=clean_env_var(settings.CLOUDINARY_CLOUD_NAME),
@@ -30,7 +32,7 @@ FOLDER = "cake_shop"
 
 
 async def upload_image(file_bytes: bytes, filename: str, folder: str = FOLDER) -> dict:
-    """Upload image to Cloudinary. Raises HTTPException if not configured or upload fails."""
+    """Upload image to Cloudinary. If Cloudinary settings are missing, fall back to local disk storage."""
     cloud_name = clean_env_var(settings.CLOUDINARY_CLOUD_NAME)
     api_key = clean_env_var(settings.CLOUDINARY_API_KEY)
     api_secret = clean_env_var(settings.CLOUDINARY_API_SECRET)
@@ -42,10 +44,25 @@ async def upload_image(file_bytes: bytes, filename: str, folder: str = FOLDER) -
     )
 
     if is_placeholder:
-        raise HTTPException(
-            status_code=500,
-            detail="Cloudinary is not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET."
-        )
+        # Fall back to local file storage under app/static/uploads
+        static_uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "uploads")
+        os.makedirs(static_uploads_dir, exist_ok=True)
+        
+        ext = os.path.splitext(filename)[1] or ".webp"
+        unique_name = f"{uuid.uuid4()}{ext}"
+        file_path = os.path.join(static_uploads_dir, unique_name)
+        
+        with open(file_path, "wb") as f:
+            f.write(file_bytes)
+            
+        local_url = f"/static/uploads/{unique_name}"
+        return {
+            "cloudinary_public_id": f"local_{unique_name}",
+            "url": local_url,
+            "thumbnail_url": local_url,
+            "medium_url": local_url,
+            "large_url": local_url,
+        }
 
     try:
         result = cloudinary.uploader.upload(
@@ -86,9 +103,18 @@ async def upload_image(file_bytes: bytes, filename: str, folder: str = FOLDER) -
 
 
 async def delete_image(public_id: str) -> bool:
-    """Delete image from Cloudinary."""
-    if not public_id or public_id.startswith("local_"):
-        # Old local image – nothing to delete on Cloudinary
+    """Delete image from Cloudinary or local fallback storage."""
+    if not public_id:
+        return True
+    if public_id.startswith("local_"):
+        filename = public_id.replace("local_", "")
+        static_uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "uploads")
+        file_path = os.path.join(static_uploads_dir, filename)
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception:
+                pass
         return True
     try:
         result = cloudinary.uploader.destroy(public_id, resource_type="image")
