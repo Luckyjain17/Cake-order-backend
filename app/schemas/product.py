@@ -39,6 +39,7 @@ class ProductBase(BaseModel):
     category_id: Optional[int] = None
     cake_type: Optional[str] = None
     flavor: Optional[str] = None
+    flavor_rates: Optional[str] = None
     shape: Optional[str] = None
     weight_options: Optional[str] = None
     original_price: float = 0
@@ -67,6 +68,7 @@ class ProductUpdate(BaseModel):
     category_id: Optional[int] = None
     cake_type: Optional[str] = None
     flavor: Optional[str] = None
+    flavor_rates: Optional[str] = None
     shape: Optional[str] = None
     weight_options: Optional[str] = None
     original_price: Optional[float] = None
@@ -107,6 +109,7 @@ class ProductListOut(BaseModel):
     original_price: float
     discount_percent: float
     flavor: Optional[str] = None
+    flavor_rates: Optional[str] = None
     is_available: bool
     is_best_seller: bool
     is_trending: bool

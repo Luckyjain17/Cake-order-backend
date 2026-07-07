@@ -34,6 +34,7 @@ class Product(Base):
     selling_price = Column(Float, nullable=False, default=0)
     discount_percent = Column(Float, default=0)
     price_base_weight = Column(String(50), nullable=False, default="500g")
+    flavor_rates = Column(String(2000), nullable=True)
 
     # Extra info
     preparation_time = Column(String(100), nullable=True)   # e.g. "24 hours"
