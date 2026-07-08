@@ -17,12 +17,15 @@ class OrderCreate(BaseModel):
     subtotal: float
     total_amount: float
     payment_method: Optional[str] = None
+    paid_amount: Optional[float] = 0
     order_source: str = "website"
 
 
 class OrderUpdate(BaseModel):
     payment_status: Optional[str] = None
     status: Optional[str] = None
+    paid_amount: Optional[float] = None
+    delivery_date: Optional[str] = None
 
 
 class OrderOut(OrderCreate):
@@ -30,6 +33,7 @@ class OrderOut(OrderCreate):
     order_number: str
     payment_status: str
     status: str
+    paid_amount: Optional[float] = 0
     created_at: datetime
     updated_at: Optional[datetime] = None
 

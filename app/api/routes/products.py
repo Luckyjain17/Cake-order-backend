@@ -213,10 +213,18 @@ async def admin_list_products(
 ):
     q = select(Product)
     if search:
-        q = q.where(or_(
-            Product.name.ilike(f"%{search}%"),
-            Product.short_description.ilike(f"%{search}%"),
-        ))
+        search_term = search.strip()
+        conditions = [
+            Product.name.ilike(f"%{search_term}%"),
+            Product.short_description.ilike(f"%{search_term}%"),
+            Product.flavor.ilike(f"%{search_term}%"),
+        ]
+        try:
+            val = int(search_term)
+            conditions.append(Product.id == val)
+        except ValueError:
+            pass
+        q = q.where(or_(*conditions))
     if category_id:
         q = q.where(Product.category_id == category_id)
 

@@ -27,6 +27,7 @@ class Order(Base):
     # Pricing
     subtotal = Column(Float, nullable=False, default=0)
     total_amount = Column(Float, nullable=False, default=0)
+    paid_amount = Column(Float, nullable=True, default=0)
 
     # Payment
     payment_method = Column(String(30), nullable=True)   # "qr_code" | "whatsapp"
