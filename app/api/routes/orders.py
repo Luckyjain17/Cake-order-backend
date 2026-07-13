@@ -24,8 +24,11 @@ def _gen_order_number(prefix: str = "CK") -> str:
 
 @router.post("/", response_model=OrderOut)
 async def create_order(data: OrderCreate, db: AsyncSession = Depends(get_db)):
+    payload = data.model_dump()
+    if payload.get("delivery_date") == "":
+        payload["delivery_date"] = None
     order = Order(
-        **data.model_dump(),
+        **payload,
         order_number=_gen_order_number("WB"),
     )
     db.add(order)
@@ -56,9 +59,9 @@ async def admin_list_orders(
     if payment_status:
         q = q.where(Order.payment_status == payment_status)
     if start_date:
-        q = q.where(func.coalesce(Order.delivery_date, func.to_char(Order.created_at, 'YYYY-MM-DD')) >= start_date)
+        q = q.where(func.coalesce(func.nullif(Order.delivery_date, ''), func.to_char(Order.created_at, 'YYYY-MM-DD')) >= start_date)
     if end_date:
-        q = q.where(func.coalesce(Order.delivery_date, func.to_char(Order.created_at, 'YYYY-MM-DD')) <= end_date)
+        q = q.where(func.coalesce(func.nullif(Order.delivery_date, ''), func.to_char(Order.created_at, 'YYYY-MM-DD')) <= end_date)
     if search:
         q = q.where(or_(
             Order.customer_name.ilike(f"%{search}%"),
@@ -89,6 +92,8 @@ async def update_order_status(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     for k, v in data.model_dump(exclude_unset=True).items():
+        if k == "delivery_date" and v == "":
+            v = None
         setattr(order, k, v)
     return OrderOut.model_validate(order)
 
@@ -116,8 +121,11 @@ async def create_manual_order(
     db: AsyncSession = Depends(get_db),
     _=Depends(get_current_admin),
 ):
+    payload = data.model_dump()
+    if payload.get("delivery_date") == "":
+        payload["delivery_date"] = None
     order = ManualOrder(
-        **data.model_dump(),
+        **payload,
         order_number=_gen_order_number("MN"),
     )
     db.add(order)
@@ -178,6 +186,7 @@ def order_to_manual(o: Order) -> dict:
 async def list_manual_orders(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=10000),
+    all: bool = Query(False),
     status: Optional[str] = None,
     order_source: Optional[str] = None,
     payment_status: Optional[str] = None,
@@ -199,9 +208,9 @@ async def list_manual_orders(
     if weight:
         q_manual = q_manual.where(ManualOrder.weight == weight)
     if start_date:
-        q_manual = q_manual.where(func.coalesce(ManualOrder.delivery_date, func.to_char(ManualOrder.created_at, 'YYYY-MM-DD')) >= start_date)
+        q_manual = q_manual.where(func.coalesce(func.nullif(ManualOrder.delivery_date, ''), func.to_char(ManualOrder.created_at, 'YYYY-MM-DD')) >= start_date)
     if end_date:
-        q_manual = q_manual.where(func.coalesce(ManualOrder.delivery_date, func.to_char(ManualOrder.created_at, 'YYYY-MM-DD')) <= end_date)
+        q_manual = q_manual.where(func.coalesce(func.nullif(ManualOrder.delivery_date, ''), func.to_char(ManualOrder.created_at, 'YYYY-MM-DD')) <= end_date)
     if search:
         q_manual = q_manual.where(or_(
             ManualOrder.customer_name.ilike(f"%{search}%"),
@@ -220,9 +229,9 @@ async def list_manual_orders(
         if payment_status:
             q_web = q_web.where(Order.payment_status == payment_status)
         if start_date:
-            q_web = q_web.where(func.coalesce(Order.delivery_date, func.to_char(Order.created_at, 'YYYY-MM-DD')) >= start_date)
+            q_web = q_web.where(func.coalesce(func.nullif(Order.delivery_date, ''), func.to_char(Order.created_at, 'YYYY-MM-DD')) >= start_date)
         if end_date:
-            q_web = q_web.where(func.coalesce(Order.delivery_date, func.to_char(Order.created_at, 'YYYY-MM-DD')) <= end_date)
+            q_web = q_web.where(func.coalesce(func.nullif(Order.delivery_date, ''), func.to_char(Order.created_at, 'YYYY-MM-DD')) <= end_date)
         if search:
             q_web = q_web.where(or_(
                 Order.customer_name.ilike(f"%{search}%"),
@@ -270,14 +279,21 @@ async def list_manual_orders(
     merged_items.sort(key=lambda x: x["created_at"], reverse=True)
 
     total = len(merged_items)
-    start_idx = (page - 1) * per_page
-    end_idx = start_idx + per_page
-    paginated_items = merged_items[start_idx:end_idx]
+    if all:
+        paginated_items = merged_items
+        page = 1
+        per_page = total if total > 0 else 20
+        pages = 1
+    else:
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        paginated_items = merged_items[start_idx:end_idx]
+        pages = (total + per_page - 1) // per_page
 
     return PaginatedManualOrders(
         items=[ManualOrderOut(**item) for item in paginated_items],
         total=total, page=page, per_page=per_page,
-        pages=(total + per_page - 1) // per_page,
+        pages=pages,
     )
 
 
@@ -328,7 +344,8 @@ async def update_manual_order(
             if "notes" in update_dict:
                 order.special_instructions = update_dict["notes"]
             if "delivery_date" in update_dict:
-                order.delivery_date = update_dict["delivery_date"]
+                val = update_dict["delivery_date"]
+                order.delivery_date = None if val == "" else val
             if "status" in update_dict:
                 order.status = update_dict["status"]
             if "payment_status" in update_dict:
@@ -344,6 +361,8 @@ async def update_manual_order(
             if not order:
                 raise HTTPException(status_code=404, detail="Manual order not found")
             for k, v in data.model_dump(exclude_unset=True).items():
+                if k == "delivery_date" and v == "":
+                    v = None
                 setattr(order, k, v)
             return ManualOrderOut.model_validate(order)
     except Exception as e:
